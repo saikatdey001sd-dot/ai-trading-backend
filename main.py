@@ -21,7 +21,10 @@ def home():
 @app.get("/scanner")
 def scanner():
 
+    # =========================
     # STOCK LIST
+    # =========================
+
     stocks = [
         "RELIANCE.NS",
         "TCS.NS",
@@ -51,7 +54,10 @@ def scanner():
 
     nifty = yf.Ticker("^NSEI")
 
-    nifty_data = nifty.history(period="5d", interval="15m")
+    nifty_data = nifty.history(
+        period="5d",
+        interval="15m"
+    )
 
     nifty_close = nifty_data["Close"]
 
@@ -76,33 +82,51 @@ def scanner():
 
             stock = yf.Ticker(symbol)
 
+            # =========================
+            # 5-MINUTE DATA
+            # =========================
+
             data = stock.history(
                 period="5d",
                 interval="5m"
             )
 
-            if data.empty:
+            # =========================
+            # 15-MINUTE DATA
+            # =========================
+
+            data_15m = stock.history(
+                period="5d",
+                interval="15m"
+            )
+
+            if data.empty or data_15m.empty:
                 continue
 
             # =========================
-            # INDICATORS
+            # RSI
             # =========================
 
             close = data["Close"]
 
-            # RSI
             rsi = RSIIndicator(
                 close,
                 window=14
             ).rsi()
 
+            # =========================
             # VWAP
+            # =========================
+
             data["VWAP"] = (
                 (data["Close"] * data["Volume"]).cumsum()
                 / data["Volume"].cumsum()
             )
 
-            # EMA
+            # =========================
+            # 5M EMA
+            # =========================
+
             data["EMA9"] = data["Close"].ewm(
                 span=9,
                 adjust=False
@@ -113,7 +137,24 @@ def scanner():
                 adjust=False
             ).mean()
 
-            # AVERAGE VOLUME
+            # =========================
+            # 15M EMA
+            # =========================
+
+            data_15m["EMA9"] = data_15m["Close"].ewm(
+                span=9,
+                adjust=False
+            ).mean()
+
+            data_15m["EMA20"] = data_15m["Close"].ewm(
+                span=20,
+                adjust=False
+            ).mean()
+
+            # =========================
+            # VOLUME
+            # =========================
+
             data["AvgVolume"] = data["Volume"].rolling(20).mean()
 
             # =========================
@@ -130,6 +171,10 @@ def scanner():
 
             latest_ema20 = data["EMA20"].iloc[-1]
 
+            latest_ema9_15m = data_15m["EMA9"].iloc[-1]
+
+            latest_ema20_15m = data_15m["EMA20"].iloc[-1]
+
             latest_volume = data["Volume"].iloc[-1]
 
             avg_volume = data["AvgVolume"].iloc[-1]
@@ -140,9 +185,20 @@ def scanner():
 
             price_above_vwap = latest_price > latest_vwap
 
-            ema_bullish = latest_ema9 > latest_ema20
+            ema_bullish_5m = latest_ema9 > latest_ema20
 
-            volume_boost = latest_volume > (avg_volume * 1.0)
+            ema_bullish_15m = (
+                latest_ema9_15m > latest_ema20_15m
+            )
+
+            multi_timeframe_bullish = (
+                ema_bullish_5m
+                and ema_bullish_15m
+            )
+
+            volume_boost = (
+                latest_volume > (avg_volume * 1.0)
+            )
 
             # =========================
             # SCORING SYSTEM
@@ -158,9 +214,9 @@ def scanner():
             if price_above_vwap:
                 score += 2
 
-            # EMA
-            if ema_bullish:
-                score += 2
+            # MULTI-TIMEFRAME
+            if multi_timeframe_bullish:
+                score += 3
 
             # VOLUME
             if volume_boost:
@@ -177,7 +233,7 @@ def scanner():
             if score >= 4:
                 signal = "BUY"
 
-            elif score >= 3:
+            elif score >= 2:
                 signal = "HOLD"
 
             else:
@@ -187,7 +243,7 @@ def scanner():
             # CONFIDENCE
             # =========================
 
-            confidence = round((score / 8) * 100, 2)
+            confidence = round((score / 9) * 100, 2)
 
             # =========================
             # ONLY BUY SIGNALS
@@ -205,9 +261,13 @@ def scanner():
 
                     "VWAP": round(latest_vwap, 2),
 
-                    "EMA9": round(latest_ema9, 2),
+                    "EMA9_5M": round(latest_ema9, 2),
 
-                    "EMA20": round(latest_ema20, 2),
+                    "EMA20_5M": round(latest_ema20, 2),
+
+                    "EMA9_15M": round(latest_ema9_15m, 2),
+
+                    "EMA20_15M": round(latest_ema20_15m, 2),
 
                     "signal": signal,
 
@@ -219,7 +279,11 @@ def scanner():
 
                     "confidence": confidence,
 
-                    "market_trend": "Bullish" if market_bullish else "Bearish"
+                    "market_trend": (
+                        "Bullish"
+                        if market_bullish
+                        else "Bearish"
+                    )
                 })
 
         except Exception as e:
@@ -228,7 +292,10 @@ def scanner():
 
             continue
 
-    # SORT BEST SIGNALS FIRST
+    # =========================
+    # SORT BEST SIGNALS
+    # =========================
+
     results = sorted(
         results,
         key=lambda x: x["confidence"],
