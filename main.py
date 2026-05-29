@@ -22,17 +22,37 @@ def home():
 def scanner():
 
     stocks = [
-        "RELIANCE.NS",
-        "TCS.NS",
-        "INFY.NS",
-        "HDFCBANK.NS",
-        "ICICIBANK.NS",
-        "SBIN.NS",
-        "AXISBANK.NS",
-        "KOTAKBANK.NS",
-        "LT.NS",
-        "ITC.NS"
-    ]
+    "RELIANCE.NS",
+    "TCS.NS",
+    "INFY.NS",
+    "HDFCBANK.NS",
+    "ICICIBANK.NS",
+    "SBIN.NS",
+    "AXISBANK.NS",
+    "KOTAKBANK.NS",
+    "LT.NS",
+    "ITC.NS",
+    "ADANIENT.NS",
+    "ADANIPORTS.NS",
+    "BAJFINANCE.NS",
+    "BHARTIARTL.NS",
+    "HCLTECH.NS",
+    "MARUTI.NS",
+    "SUNPHARMA.NS",
+    "TITAN.NS",
+    "ULTRACEMCO.NS",
+    "WIPRO.NS",
+    "POWERGRID.NS",
+    "ONGC.NS",
+    "NTPC.NS",
+    "COALINDIA.NS",
+    "TATAMOTORS.NS",
+    "TATASTEEL.NS",
+    "JSWSTEEL.NS",
+    "HINDALCO.NS",
+    "INDUSINDBK.NS",
+    "TECHM.NS"
+]
 
     results = []
 
