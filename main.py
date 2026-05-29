@@ -21,56 +21,80 @@ def home():
 @app.get("/scanner")
 def scanner():
 
+    # STOCK LIST
     stocks = [
-    "RELIANCE.NS",
-    "TCS.NS",
-    "INFY.NS",
-    "HDFCBANK.NS",
-    "ICICIBANK.NS",
-    "SBIN.NS",
-    "AXISBANK.NS",
-    "KOTAKBANK.NS",
-    "LT.NS",
-    "ITC.NS",
-    "ADANIENT.NS",
-    "ADANIPORTS.NS",
-    "BAJFINANCE.NS",
-    "BHARTIARTL.NS",
-    "HCLTECH.NS",
-    "MARUTI.NS",
-    "SUNPHARMA.NS",
-    "TITAN.NS",
-    "ULTRACEMCO.NS",
-    "WIPRO.NS",
-    "POWERGRID.NS",
-    "ONGC.NS",
-    "NTPC.NS",
-    "COALINDIA.NS",
-    "TATAMOTORS.NS",
-    "TATASTEEL.NS",
-    "JSWSTEEL.NS",
-    "HINDALCO.NS",
-    "INDUSINDBK.NS",
-    "TECHM.NS"
-]
+        "RELIANCE.NS",
+        "TCS.NS",
+        "INFY.NS",
+        "HDFCBANK.NS",
+        "ICICIBANK.NS",
+        "SBIN.NS",
+        "AXISBANK.NS",
+        "KOTAKBANK.NS",
+        "LT.NS",
+        "ITC.NS",
+        "BAJFINANCE.NS",
+        "TITAN.NS",
+        "ASIANPAINT.NS",
+        "MARUTI.NS",
+        "HCLTECH.NS",
+        "WIPRO.NS",
+        "POWERGRID.NS",
+        "ULTRACEMCO.NS"
+    ]
 
     results = []
+
+    # =========================
+    # NIFTY TREND FILTER
+    # =========================
+
+    nifty = yf.Ticker("^NSEI")
+
+    nifty_data = nifty.history(period="5d", interval="15m")
+
+    nifty_close = nifty_data["Close"]
+
+    nifty_ema20 = nifty_close.ewm(
+        span=20,
+        adjust=False
+    ).mean()
+
+    latest_nifty = nifty_close.iloc[-1]
+
+    latest_nifty_ema20 = nifty_ema20.iloc[-1]
+
+    market_bullish = latest_nifty > latest_nifty_ema20
+
+    # =========================
+    # STOCK SCANNING
+    # =========================
 
     for symbol in stocks:
 
         try:
+
             stock = yf.Ticker(symbol)
 
-            data = stock.history(period="5d", interval="5m")
+            data = stock.history(
+                period="5d",
+                interval="5m"
+            )
 
             if data.empty:
                 continue
 
-            # CLOSE PRICE
+            # =========================
+            # INDICATORS
+            # =========================
+
             close = data["Close"]
 
             # RSI
-            rsi = RSIIndicator(close, window=14).rsi()
+            rsi = RSIIndicator(
+                close,
+                window=14
+            ).rsi()
 
             # VWAP
             data["VWAP"] = (
@@ -79,61 +103,100 @@ def scanner():
             )
 
             # EMA
-            data["EMA9"] = data["Close"].ewm(span=9, adjust=False).mean()
-            data["EMA20"] = data["Close"].ewm(span=20, adjust=False).mean()
+            data["EMA9"] = data["Close"].ewm(
+                span=9,
+                adjust=False
+            ).mean()
+
+            data["EMA20"] = data["Close"].ewm(
+                span=20,
+                adjust=False
+            ).mean()
 
             # AVERAGE VOLUME
             data["AvgVolume"] = data["Volume"].rolling(20).mean()
 
+            # =========================
             # LATEST VALUES
+            # =========================
+
             latest_price = close.iloc[-1]
+
             latest_rsi = rsi.iloc[-1]
 
             latest_vwap = data["VWAP"].iloc[-1]
 
             latest_ema9 = data["EMA9"].iloc[-1]
+
             latest_ema20 = data["EMA20"].iloc[-1]
 
             latest_volume = data["Volume"].iloc[-1]
+
             avg_volume = data["AvgVolume"].iloc[-1]
 
+            # =========================
             # CONDITIONS
+            # =========================
+
             price_above_vwap = latest_price > latest_vwap
 
             ema_bullish = latest_ema9 > latest_ema20
 
-            volume_boost = latest_volume > (avg_volume * 1.5)
+            volume_boost = latest_volume > (avg_volume * 1.0)
 
+            # =========================
             # SCORING SYSTEM
+            # =========================
+
             score = 0
 
-            if latest_rsi > 55:
+            # RSI
+            if latest_rsi > 50:
                 score += 1
 
+            # VWAP
             if price_above_vwap:
                 score += 2
 
+            # EMA
             if ema_bullish:
                 score += 2
 
+            # VOLUME
             if volume_boost:
+                score += 1
+
+            # MARKET TREND
+            if market_bullish:
                 score += 2
 
-            # SIGNAL DECISION
+            # =========================
+            # SIGNAL LOGIC
+            # =========================
+
             if score >= 4:
                 signal = "BUY"
+
             elif score >= 3:
                 signal = "HOLD"
+
             else:
                 signal = "SELL"
 
-            # DYNAMIC CONFIDENCE
-            confidence = round((score / 7) * 100, 2)
+            # =========================
+            # CONFIDENCE
+            # =========================
 
-            # ONLY GOOD BUY SIGNALS
+            confidence = round((score / 8) * 100, 2)
+
+            # =========================
+            # ONLY BUY SIGNALS
+            # =========================
+
             if signal == "BUY":
 
                 results.append({
+
                     "symbol": symbol,
 
                     "price": round(latest_price, 2),
@@ -154,11 +217,15 @@ def scanner():
 
                     "stoploss": round(latest_price * 0.99, 2),
 
-                    "confidence": confidence
+                    "confidence": confidence,
+
+                    "market_trend": "Bullish" if market_bullish else "Bearish"
                 })
 
         except Exception as e:
+
             print(f"Error in {symbol}: {e}")
+
             continue
 
     # SORT BEST SIGNALS FIRST
