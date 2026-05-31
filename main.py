@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
 from ta.momentum import RSIIndicator
+from ta.volatility import AverageTrueRange
 import numpy as np
 
 app = FastAPI()
@@ -43,8 +44,43 @@ def scanner():
         "HCLTECH.NS",
         "WIPRO.NS",
         "POWERGRID.NS",
-        "ULTRACEMCO.NS"
-    ]
+        "ULTRACEMCO.NS",
+        
+        # Additional Nifty Stocks
+
+    "ADANIPORTS.NS",
+    "ADANIENT.NS",
+    "BHARTIARTL.NS",
+    "HINDUNILVR.NS",
+    "SUNPHARMA.NS",
+    "TATAMOTORS.NS",
+    "TATASTEEL.NS",
+    "NTPC.NS",
+    "ONGC.NS",
+    "COALINDIA.NS",
+    "TECHM.NS",
+    "INDUSINDBK.NS",
+    "NESTLEIND.NS",
+    "GRASIM.NS",
+    "DRREDDY.NS",
+    "EICHERMOT.NS",
+    "CIPLA.NS",
+    "HEROMOTOCO.NS",
+    "JSWSTEEL.NS",
+    "SHRIRAMFIN.NS",
+    "TRENT.NS",
+    "BAJAJFINSV.NS",
+    "BPCL.NS",
+    "BRITANNIA.NS",
+    "DIVISLAB.NS",
+    "HDFCLIFE.NS",
+    "SBILIFE.NS",
+    "APOLLOHOSP.NS",
+    "TATACONSUM.NS",
+    "BEL.NS",
+    "PIDILITIND.NS",
+    "DLF.NS"
+]
 
     results = []
 
@@ -158,6 +194,19 @@ def scanner():
             data["AvgVolume"] = data["Volume"].rolling(20).mean()
 
             # =========================
+            # ATR
+            # =========================
+
+            atr_indicator = AverageTrueRange(
+                high=data["High"],
+                low=data["Low"],
+                close=data["close"],
+                window=14
+            )
+
+            data["ATR"] = atr_indicator.average_true_range()
+
+            # =========================
             # LATEST VALUES
             # =========================
 
@@ -178,6 +227,8 @@ def scanner():
             latest_volume = data["Volume"].iloc[-1]
 
             avg_volume = data["AvgVolume"].iloc[-1]
+
+            latest_atr = data["ATR"].ioc[-1]
 
             # =========================
             # CONDITIONS
@@ -230,10 +281,10 @@ def scanner():
             # SIGNAL LOGIC
             # =========================
 
-            if score >= 4:
+            if score >= 6:
                 signal = "BUY"
 
-            elif score >= 2:
+            elif score >= 3:
                 signal = "HOLD"
 
             else:
@@ -273,11 +324,13 @@ def scanner():
 
                     "entry": round(latest_price, 2),
 
-                    "target": round(latest_price * 1.02, 2),
+                    "target": round(latest_price + (2 * latest_atr), 2),
 
-                    "stoploss": round(latest_price * 0.99, 2),
+                    "stoploss": round(latest_price - latest_atr, 2),
 
                     "confidence": confidence,
+
+                    "score": score,
 
                     "market_trend": (
                         "Bullish"
@@ -298,7 +351,7 @@ def scanner():
 
     results = sorted(
         results,
-        key=lambda x: x["confidence"],
+        key=lambda x: x["score"],
         reverse=True
     )
 
