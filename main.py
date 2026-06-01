@@ -228,7 +228,7 @@ def scanner():
 
             avg_volume = data["AvgVolume"].iloc[-1]
 
-            latest_atr = data["ATR"].ioc[-1]
+            latest_atr = data["ATR"].iloc[-1]
 
             # =========================
             # CONDITIONS
@@ -281,7 +281,7 @@ def scanner():
             # SIGNAL LOGIC
             # =========================
 
-            if score >= 6:
+            if score >= 5:
                 signal = "BUY"
 
             elif score >= 3:
