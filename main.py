@@ -200,7 +200,7 @@ def scanner():
             atr_indicator = AverageTrueRange(
                 high=data["High"],
                 low=data["Low"],
-                close=data["close"],
+                close=data["Close"],
                 window=14
             )
 
