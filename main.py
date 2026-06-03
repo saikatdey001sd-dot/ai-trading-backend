@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
@@ -83,7 +84,20 @@ def scanner():
 ]
 
     results = []
+    # =========================
+    # MARKET HOURS FILTER
+    # =========================
 
+    now = datetime.now()
+
+    market_open = (
+        (now.hour > 9 or (now.hour == 9 and now.minute >= 15))
+        and
+        (now.hour < 15 or (now.hour == 15 and now.minute <= 30))
+    )
+
+    if not market_open:
+        return []
     # =========================
     # NIFTY TREND FILTER
     # =========================
@@ -281,10 +295,10 @@ def scanner():
             # SIGNAL LOGIC
             # =========================
 
-            if score >= 5:
+            if score >= 7:
                 signal = "BUY"
 
-            elif score >= 3:
+            elif score >= 4:
                 signal = "HOLD"
 
             else:
@@ -354,5 +368,7 @@ def scanner():
         key=lambda x: x["score"],
         reverse=True
     )
+
+    results = results[:5]
 
     return results
