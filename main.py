@@ -295,7 +295,12 @@ def scanner():
             # SIGNAL LOGIC
             # =========================
 
-            if score >= 7:
+            if (
+                latest_rsi > 50
+                and price_above_vwap
+                and multi_timeframe_bullish
+                and score >= 7
+            ):
                 signal = "BUY"
 
             elif score >= 4:
