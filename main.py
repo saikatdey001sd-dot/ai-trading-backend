@@ -88,7 +88,11 @@ def scanner():
     # MARKET HOURS FILTER
     # =========================
 
-    now = datetime.now()
+    from datetime import datetime
+    import pytz
+
+    india = pytz.timezone("Asia/Kolkata")
+    now = datetime.now(india)
 
     market_open = (
         (now.hour > 9 or (now.hour == 9 and now.minute >= 15))
@@ -290,7 +294,15 @@ def scanner():
             # MARKET TREND
             if market_bullish:
                 score += 2
-
+            print(
+                symbol,
+                "RSI=", round(latest_rsi, 2),
+                "VWAP=", price_above_vwap,
+                "5M=", ema_bullish_5m,
+                "15M=", ema_bullish_15m,
+                "VOL=", volume_boost,
+                "SCORE=", score
+            )
             # =========================
             # SIGNAL LOGIC
             # =========================
