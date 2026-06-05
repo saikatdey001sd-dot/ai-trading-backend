@@ -128,10 +128,11 @@ def scanner():
 
     latest_nifty_ema9 = nifty_ema9.iloc[-1]
 
-    market_bullish = latest_nifty_ema9 > latest_nifty_ema20
-
+    market_bullish = (
+        latest_nifty > latest_nifty_ema20
+    )
     # =========================
-    # STOCK SCANNING
+    # STOCK SCANNING    
     # =========================
 
     for symbol in stocks:
