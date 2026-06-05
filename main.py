@@ -257,7 +257,7 @@ def scanner():
             # CONDITIONS
             # =========================
 
-            price_above_vwap = latest_price > latest_vwap
+            price_above_vwap = latest_price > (latest_vwap * 1.002)
 
             ema_bullish_5m = latest_ema9 > latest_ema20
 
@@ -281,7 +281,7 @@ def scanner():
             score = 0
 
             # RSI
-            if latest_rsi > 50:
+            if latest_rsi > 55 and latest_rsi < 70:
                 score += 1
 
             # VWAP
@@ -314,7 +314,7 @@ def scanner():
 
             if (
                 market_bullish
-                and latest_rsi > 50
+                and 55 < latest_rsi < 70
                 and price_above_vwap
                 and multi_timeframe_bullish
                 and score >= 7
