@@ -308,7 +308,8 @@ def scanner():
             # =========================
 
             if (
-                latest_rsi > 50
+                market_bullish
+                and latest_rsi > 50
                 and price_above_vwap
                 and multi_timeframe_bullish
                 and score >= 7
