@@ -124,7 +124,11 @@ def scanner():
 
     latest_nifty_ema20 = nifty_ema20.iloc[-1]
 
-    market_bullish = latest_nifty > latest_nifty_ema20
+    nifty_ema9 = nifty_close.ewm(span=9).mean()
+
+    latest_nifty_ema9 = nifty_ema9.iloc[-1]
+
+    market_bullish = latest_nifty_ema9 > latest_nifty_ema20
 
     # =========================
     # STOCK SCANNING
