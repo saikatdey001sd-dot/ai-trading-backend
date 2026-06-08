@@ -257,7 +257,7 @@ def scanner():
             # CONDITIONS
             # =========================
 
-            price_above_vwap = latest_price > (latest_vwap * 1.002)
+            price_above_vwap = latest_price > (latest_vwap * 1.001)
 
             ema_bullish_5m = latest_ema9 > latest_ema20
 
