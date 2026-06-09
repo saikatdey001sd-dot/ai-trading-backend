@@ -271,7 +271,7 @@ def scanner():
             )
 
             volume_boost = (
-                latest_volume > (avg_volume * 1.0)
+                latest_volume > (avg_volume * 1.5)
             )
 
             # =========================
