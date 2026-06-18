@@ -130,6 +130,7 @@ def scanner():
 
     market_bullish = (
         latest_nifty > latest_nifty_ema20
+        and latest_nifty_ema9 > latest_nifty_ema20
     )
     # =========================
     # STOCK SCANNING    
@@ -259,7 +260,10 @@ def scanner():
 
             price_above_vwap = latest_price > (latest_vwap * 1.001)
 
-            ema_bullish_5m = latest_ema9 > latest_ema20
+            ema_bullish_5m = (
+                latest_ema9 > latest_ema20
+                and (latest_ema9 - latest_ema20) / latest_ema20 > 0.001
+            )
 
             ema_bullish_15m = (
                 latest_ema9_15m > latest_ema20_15m
@@ -314,10 +318,10 @@ def scanner():
 
             if (
                 market_bullish
-                and 55 < latest_rsi < 70
+                and 58 < latest_rsi < 68
                 and price_above_vwap
                 and multi_timeframe_bullish
-                and score >= 7
+                and score >= 8
             ):
                 signal = "BUY"
 
