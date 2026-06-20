@@ -262,7 +262,6 @@ def scanner():
 
             ema_bullish_5m = (
                 latest_ema9 > latest_ema20
-                and (latest_ema9 - latest_ema20) / latest_ema20 > 0.001
             )
 
             ema_bullish_15m = (
