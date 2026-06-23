@@ -284,7 +284,7 @@ def scanner():
             score = 0
 
             # RSI
-            if latest_rsi > 55 and latest_rsi < 70:
+            if latest_rsi > 60 and latest_rsi < 68:
                 score += 1
 
             # VWAP
