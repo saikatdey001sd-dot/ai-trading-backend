@@ -334,14 +334,53 @@ def scanner():
             # CONFIDENCE
             # =========================
 
-            confidence = round((score / 9) * 100, 2)
+            confidence = 50
+
+            # RSI contribution
+            if 60 <= latest_rsi <= 65:
+                confidence += 10
+            elif 58 <= latest_rsi <= 68:
+                confidence += 5
+
+            # Volume contribution
+            if volume_boost:
+                confidence += 15
+
+            # VWAP strength
+            vwap_gap = ((price - latest_vwap) / latest_vwap) * 100
+
+            if vwap_gap > 1:
+                confidence += 10
+            elif vwap_gap > 0.5:
+                confidence += 5
+
+            # EMA strength
+            ema_gap_5m = ((ema9_5m - ema20_5m) / ema20_5m) * 100
+            ema_gap_15m = ((ema9_15m - ema20_15m) / ema20_15m) * 100
+
+            if ema_gap_5m > 0.3:
+                confidence += 5
+
+            if ema_gap_15m > 0.3:
+                confidence += 5
+
+            confidence = min(confidence, 95)
 
             # =========================
             # ONLY BUY SIGNALS
             # =========================
 
             if signal == "BUY":
-
+                
+                print(
+                    symbol,
+                    "CONF=", confidence,
+                    "RSI=", round(latest_rsi, 2),
+                    "VWAP GAP=", round(vwap_gap, 2),
+                    "EMA5 GAP=", round(ema_gap_5m, 2),
+                 "EMA15 GAP=", round(ema_gap_15m, 2)
+                )
+                
                 results.append({
 
                     "symbol": symbol,
