@@ -178,8 +178,16 @@ def scanner():
             # VWAP
             # =========================
 
+            # Typical Price
+            typical_price = (
+                data["High"] +
+                data["Low"] +
+                data["Close"]
+            ) / 3
+
+            # VWAP
             data["VWAP"] = (
-                (data["Close"] * data["Volume"]).cumsum()
+                (typical_price * data["Volume"]).cumsum()
                 / data["Volume"].cumsum()
             )
 
@@ -334,37 +342,66 @@ def scanner():
             # CONFIDENCE
             # =========================
 
-            confidence = 50
+            confidence = 40
+
+            # Market trend
+            if market_bullish:
+               confidence += 10
 
             # RSI contribution
-            if 60 <= latest_rsi <= 65:
-                confidence += 10
-            elif 58 <= latest_rsi <= 68:
-                confidence += 5
+            if 60 <= latest_rsi <= 64:
+               confidence += 12
+            elif 64 < latest_rsi <= 68:
+               confidence += 8
+            elif 58 <= latest_rsi < 60:
+               confidence += 5
 
             # Volume contribution
-            if volume_boost:
+            volume_ratio = (
+                latest_volume / avg_volume
+                if avg_volume > 0
+                else 0
+            )
+
+            if volume_ratio >= 2:
                 confidence += 15
+            elif volume_ratio >= 1.5:
+                confidence += 10
+            elif volume_ratio >= 1.2:
+                confidence += 5
 
             # VWAP strength
-            vwap_gap = ((price - latest_vwap) / latest_vwap) * 100
+            vwap_gap = ((latest_price - latest_vwap) / latest_vwap) * 100
 
-            if vwap_gap > 1:
-                confidence += 10
-            elif vwap_gap > 0.5:
-                confidence += 5
+            if vwap_gap >= 2:
+                confidence += 12
+            elif vwap_gap >= 1:
+                confidence += 8
+            elif vwap_gap >= 0.5:
+                confidence += 4
 
             # EMA strength
-            ema_gap_5m = ((ema9_5m - ema20_5m) / ema20_5m) * 100
-            ema_gap_15m = ((ema9_15m - ema20_15m) / ema20_15m) * 100
+            ema_gap_5m = (
+                (latest_ema9 - latest_ema20)
+                / latest_ema20
+            ) * 100
 
-            if ema_gap_5m > 0.3:
+            ema_gap_15m = (
+                (latest_ema9_15m - latest_ema20_15m)
+                / latest_ema20_15m
+            ) * 100
+
+            if ema_gap_5m >= 0.50:
+                confidence += 8
+            elif ema_gap_5m >= 0.25:
                 confidence += 5
 
-            if ema_gap_15m > 0.3:
+            if ema_gap_15m >= 0.50:
+                confidence += 8
+            elif ema_gap_15m >= 0.25:
                 confidence += 5
 
-            confidence = min(confidence, 95)
+            confidence = max(40, min(round(confidence, 1), 95))
 
             # =========================
             # ONLY BUY SIGNALS
@@ -378,9 +415,14 @@ def scanner():
                     "RSI=", round(latest_rsi, 2),
                     "VWAP GAP=", round(vwap_gap, 2),
                     "EMA5 GAP=", round(ema_gap_5m, 2),
-                 "EMA15 GAP=", round(ema_gap_15m, 2)
+                    "EMA15 GAP=", round(ema_gap_15m, 2)
                 )
-                
+
+                entry_price = round(
+                    data["High"].iloc[-1] + (0.10 * latest_atr),
+                    2
+                )
+
                 results.append({
 
                     "symbol": symbol,
@@ -401,13 +443,21 @@ def scanner():
 
                     "signal": signal,
 
-                    "entry": round(latest_price, 2),
+                    "entry": entry_price,
 
-                    "target": round(latest_price + (2 * latest_atr), 2),
+                    "target": round(entry_price + (2 * latest_atr), 2),
 
-                    "stoploss": round(latest_price - latest_atr, 2),
+                    "stoploss": round(entry_price - latest_atr, 2),
 
                     "confidence": confidence,
+
+                    "volume_ratio": round(volume_ratio, 2),
+
+                    "vwap_gap": round(vwap_gap, 2),
+
+                    "ema_gap_5m": round(ema_gap_5m, 2),
+
+                    "ema_gap_15m": round(ema_gap_15m, 2),
 
                     "score": score,
 
