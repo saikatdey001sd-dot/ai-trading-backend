@@ -263,6 +263,16 @@ def scanner():
             latest_atr = data["ATR"].iloc[-1]
 
             # =========================
+            # SUPPORT & RESISTANCE
+            # =========================
+
+            recent_high = data_15m["High"].tail(20).max()
+            recent_low = data_15m["Low"].tail(20).min()
+
+            distance_to_resistance = ((recent_high - latest_price) / latest_price) * 100
+            distance_from_support = ((latest_price - recent_low) / latest_price) * 100
+
+            # =========================
             # CONDITIONS
             # =========================
 
@@ -325,10 +335,8 @@ def scanner():
 
             if (
                 market_bullish
-                and 58 < latest_rsi < 68
-                and price_above_vwap
-                and multi_timeframe_bullish
-                and score >= 8
+                and score >= 7
+                and latest_rsi > 58
             ):
                 signal = "BUY"
 
@@ -415,7 +423,11 @@ def scanner():
                     "RSI=", round(latest_rsi, 2),
                     "VWAP GAP=", round(vwap_gap, 2),
                     "EMA5 GAP=", round(ema_gap_5m, 2),
-                    "EMA15 GAP=", round(ema_gap_15m, 2)
+                    "EMA15 GAP=", round(ema_gap_15m, 2),
+                    "SUP=", round(recent_low, 2),
+                    "RES=", round(recent_high, 2),
+                    "DIST RES=", round(distance_to_resistance, 2),
+                    "DIST SUP=", round(distance_from_support, 2)
                 )
 
                 entry_price = round(
@@ -450,6 +462,14 @@ def scanner():
                     "stoploss": round(entry_price - latest_atr, 2),
 
                     "confidence": confidence,
+
+                    "support": round(recent_low, 2),
+
+                    "resistance": round(recent_high, 2),
+
+                    "distance_to_resistance": round(distance_to_resistance, 2),
+
+                    "distance_from_support": round(distance_from_support, 2),
 
                     "volume_ratio": round(volume_ratio, 2),
 
