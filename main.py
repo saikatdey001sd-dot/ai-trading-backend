@@ -23,6 +23,8 @@ def home():
 @app.get("/scanner")
 def scanner():
 
+    print(">>> SCANNER FUNCTION STARTED <<<")
+
     # =========================
     # STOCK LIST
     # =========================
@@ -54,7 +56,7 @@ def scanner():
     "BHARTIARTL.NS",
     "HINDUNILVR.NS",
     "SUNPHARMA.NS",
-    "TATAMOTORS.NS",
+    "TMCV.NS",
     "TATASTEEL.NS",
     "NTPC.NS",
     "ONGC.NS",
@@ -136,9 +138,22 @@ def scanner():
     # STOCK SCANNING    
     # =========================
 
+    total_stocks = 0
+
+    rsi_pass = 0
+    vwap_pass = 0
+    ema5_pass = 0
+    ema15_pass = 0
+    volume_pass = 0
+    market_pass = 0
+    buy_candidates = 0
+
+
     for symbol in stocks:
 
         try:
+        
+            total_stocks += 1
 
             stock = yf.Ticker(symbol)
 
@@ -258,7 +273,7 @@ def scanner():
 
             latest_volume = data["Volume"].iloc[-1]
 
-            avg_volume = data["AvgVolume"].iloc[-1]
+            avg_volume = data["Volume"].rolling(20).mean().iloc[-1]
 
             latest_atr = data["ATR"].iloc[-1]
 
@@ -292,7 +307,7 @@ def scanner():
             )
 
             volume_boost = (
-                latest_volume > (avg_volume * 1.5)
+                latest_volume > (avg_volume * 1.3)
             )
 
             # =========================
@@ -304,24 +319,35 @@ def scanner():
             # RSI
             if latest_rsi > 60 and latest_rsi < 68:
                 score += 1
+                rsi_pass += 1
 
             # VWAP
             if price_above_vwap:
                 score += 2
+                vwap_pass += 1
 
             # MULTI-TIMEFRAME
             if multi_timeframe_bullish:
                 score += 3
 
+            if ema_bullish_5m:
+                ema5_pass += 1
+
+            if ema_bullish_15m:
+                ema15_pass += 1
+
             # VOLUME
             if volume_boost:
                 score += 1
+                volume_pass += 1
 
             # MARKET TREND
             if market_bullish:
                 score += 2
+                market_pass += 1
             print(
                 symbol,
+                "MARKET=", market_bullish,
                 "RSI=", round(latest_rsi, 2),
                 "VWAP=", price_above_vwap,
                 "5M=", ema_bullish_5m,
@@ -335,10 +361,13 @@ def scanner():
 
             if (
                 market_bullish
-                and score >= 7
-                and latest_rsi > 58
+                and score >= 6
+                and latest_rsi > 50
             ):
                 signal = "BUY"
+
+                if not market_bullish:
+                    confidence -= 10
 
             elif score >= 4:
                 signal = "HOLD"
@@ -484,7 +513,7 @@ def scanner():
                     "market_trend": (
                         "Bullish"
                         if market_bullish
-                        else "Bearish"
+                        else "weak"
                     )
                 })
 
@@ -505,5 +534,23 @@ def scanner():
     )
 
     results = results[:5]
+    
+    # =========================
+    # DIAGNOSTICS SUMMARY
+    # =========================
+
+    print("Reached diagnostics")
+
+    print("\n========================")
+    print("DIAGNOSTICS SUMMARY")
+    print("========================")
+    print("Stocks Scanned :", total_stocks)
+    print("RSI Passed     :", rsi_pass)
+    print("VWAP Passed    :", vwap_pass)
+    print("EMA5 Passed    :", ema5_pass)
+    print("EMA15 Passed   :", ema15_pass)
+    print("Volume Passed  :", volume_pass)
+    print("Market Passed  :", market_pass)
+    print("========================\n")
 
     return results
