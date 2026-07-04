@@ -366,14 +366,18 @@ def scanner():
             ):
                 signal = "BUY"
 
-                if not market_bullish:
-                    confidence -= 10
-
             elif score >= 4:
                 signal = "HOLD"
 
             else:
                 signal = "SELL"
+
+            # =========================
+            # RESISTANCE FILTER
+            # =========================
+
+            if signal == "BUY" and distance_to_resistance < 1:
+                signal = "HOLD"
 
             # =========================
             # CONFIDENCE
@@ -444,6 +448,9 @@ def scanner():
             # ONLY BUY SIGNALS
             # =========================
 
+            if distance_to_resistance < 1:
+                signal = "HOLD"
+
             if signal == "BUY":
                 
                 print(
@@ -460,7 +467,7 @@ def scanner():
                 )
 
                 entry_price = round(
-                    data["High"].iloc[-1] + (0.10 * latest_atr),
+                    data["High"].iloc[-1] + (0.20 * latest_atr),
                     2
                 )
 
