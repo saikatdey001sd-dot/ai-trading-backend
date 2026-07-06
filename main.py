@@ -23,6 +23,8 @@ def home():
 @app.get("/scanner")
 def scanner():
 
+    print("SCANNER CALLED")
+
     print(">>> SCANNER FUNCTION STARTED <<<")
 
     # =========================
@@ -82,7 +84,54 @@ def scanner():
     "TATACONSUM.NS",
     "BEL.NS",
     "PIDILITIND.NS",
-    "DLF.NS"
+    "DLF.NS",   
+    "ABB.NS",
+    "ACC.NS",
+    "AMBUJACEM.NS",
+    "AUBANK.NS",
+    "BANDHANBNK.NS",
+    "BHEL.NS",
+    "CANBK.NS",
+    "CGPOWER.NS",
+    "CHOLAFIN.NS",
+    "CUMMINSIND.NS",
+    "DABUR.NS",
+    "DMART.NS",
+    "GAIL.NS",
+    "GODREJCP.NS",
+    "HAL.NS",
+    "HAVELLS.NS",
+    "ICICIPRULI.NS",
+    "IDFCFIRSTB.NS",
+    "INDUSTOWER.NS",
+    "IOC.NS",
+    "IRCTC.NS",
+    "JINDALSTEL.NS",
+    "LICHSGFIN.NS",
+    "LODHA.NS",
+    "LUPIN.NS",
+    "MOTHERSON.NS",
+    "NAUKRI.NS",
+    "NMDC.NS",
+    "OBEROIRLTY.NS",
+    "OFSS.NS",
+    "PAGEIND.NS",
+    "PFC.NS",
+    "PNB.NS",
+    "POLYCAB.NS",
+    "RECLTD.NS",
+    "SAIL.NS",
+    "SHREECEM.NS",
+    "SIEMENS.NS",
+    "SRF.NS",
+    "TATAPOWER.NS",
+    "TORNTPHARM.NS",
+    "TORNTPOWER.NS",
+    "TVSMOTOR.NS",
+    "UNIONBANK.NS",
+    "VBL.NS",
+    "VEDL.NS",
+    "ZYDUSLIFE.NS"
 ]
 
     results = []
@@ -126,14 +175,34 @@ def scanner():
 
     latest_nifty_ema20 = nifty_ema20.iloc[-1]
 
-    nifty_ema9 = nifty_close.ewm(span=9).mean()
+    nifty_ema9 = nifty_close.ewm(
+        span=9,
+        adjust=False
+    ).mean()
 
     latest_nifty_ema9 = nifty_ema9.iloc[-1]
 
-    market_bullish = (
-        latest_nifty > latest_nifty_ema20
-        and latest_nifty_ema9 > latest_nifty_ema20
-    )
+    print("\n===== NIFTY =====")
+    print("Latest Nifty :", round(latest_nifty, 2))
+    print("EMA9         :", round(latest_nifty_ema9, 2))
+    print("EMA20        :", round(latest_nifty_ema20, 2))
+    print("=================\n")
+
+    print(nifty_data.tail(5))
+
+    market_bullish = latest_nifty_ema9 > latest_nifty_ema20
+
+    print("Market Bullish =", market_bullish)
+    
+    print("\n========================")
+    print("NIFTY STATUS")
+    print("========================")
+    print(f"Latest Nifty : {latest_nifty:.2f}")
+    print(f"EMA9         : {latest_nifty_ema9:.2f}")
+    print(f"EMA20        : {latest_nifty_ema20:.2f}")
+    print(f"Market Bullish : {market_bullish}")
+    print("========================\n")
+
     # =========================
     # STOCK SCANNING    
     # =========================
@@ -150,6 +219,8 @@ def scanner():
 
 
     for symbol in stocks:
+
+        print(f"Checking {symbol}...")
 
         try:
         
@@ -275,6 +346,12 @@ def scanner():
 
             avg_volume = data["Volume"].rolling(20).mean().iloc[-1]
 
+            volume_ratio = (
+                latest_volume / avg_volume
+                if avg_volume > 0
+                else 0
+            )
+
             latest_atr = data["ATR"].iloc[-1]
 
             # =========================
@@ -284,6 +361,21 @@ def scanner():
             recent_high = data_15m["High"].tail(20).max()
             recent_low = data_15m["Low"].tail(20).min()
 
+            # Highest high of last 5 completed candles
+
+            breakout_level = data["High"].iloc[-6:-1].max()
+
+            # Current candle close
+
+            current_close = data["Close"].iloc[-1]
+
+            # Breakout confirmation
+
+            breakout_confirmed = (
+                current_close > breakout_level
+                and volume_ratio >= 1.3
+            )
+
             distance_to_resistance = ((recent_high - latest_price) / latest_price) * 100
             distance_from_support = ((latest_price - recent_low) / latest_price) * 100
 
@@ -291,7 +383,7 @@ def scanner():
             # CONDITIONS
             # =========================
 
-            price_above_vwap = latest_price > (latest_vwap * 1.001)
+            price_above_vwap = latest_price > (latest_vwap * 1.003)
 
             ema_bullish_5m = (
                 latest_ema9 > latest_ema20
@@ -307,7 +399,7 @@ def scanner():
             )
 
             volume_boost = (
-                latest_volume > (avg_volume * 1.3)
+                latest_volume > (avg_volume * 1.5)
             )
 
             # =========================
@@ -317,9 +409,15 @@ def scanner():
             score = 0
 
             # RSI
-            if latest_rsi > 60 and latest_rsi < 68:
-                score += 1
-                rsi_pass += 1
+            if 60 <= latest_rsi < 65:
+               score += 1
+               rsi_pass += 1
+            elif 65 <= latest_rsi < 72:
+               score += 2
+               rsi_pass += 1
+            elif latest_rsi >= 72:
+               score += 1
+               rsi_pass += 1
 
             # VWAP
             if price_above_vwap:
@@ -355,29 +453,6 @@ def scanner():
                 "VOL=", volume_boost,
                 "SCORE=", score
             )
-            # =========================
-            # SIGNAL LOGIC
-            # =========================
-
-            if (
-                market_bullish
-                and score >= 6
-                and latest_rsi > 50
-            ):
-                signal = "BUY"
-
-            elif score >= 4:
-                signal = "HOLD"
-
-            else:
-                signal = "SELL"
-
-            # =========================
-            # RESISTANCE FILTER
-            # =========================
-
-            if signal == "BUY" and distance_to_resistance < 1:
-                signal = "HOLD"
 
             # =========================
             # CONFIDENCE
@@ -396,20 +471,6 @@ def scanner():
                confidence += 8
             elif 58 <= latest_rsi < 60:
                confidence += 5
-
-            # Volume contribution
-            volume_ratio = (
-                latest_volume / avg_volume
-                if avg_volume > 0
-                else 0
-            )
-
-            if volume_ratio >= 2:
-                confidence += 15
-            elif volume_ratio >= 1.5:
-                confidence += 10
-            elif volume_ratio >= 1.2:
-                confidence += 5
 
             # VWAP strength
             vwap_gap = ((latest_price - latest_vwap) / latest_vwap) * 100
@@ -432,6 +493,11 @@ def scanner():
                 / latest_ema20_15m
             ) * 100
 
+            strong_ema = (
+                ema_gap_5m >= 0.25
+                and ema_gap_15m >= 0.25
+            )
+
             if ema_gap_5m >= 0.50:
                 confidence += 8
             elif ema_gap_5m >= 0.25:
@@ -442,14 +508,53 @@ def scanner():
             elif ema_gap_15m >= 0.25:
                 confidence += 5
 
+            if volume_ratio >= 2:
+                confidence += 15
+            elif volume_ratio >= 1.5:
+                confidence += 10
+            elif volume_ratio >= 1.2:
+                confidence += 5
+
             confidence = max(40, min(round(confidence, 1), 95))
 
+            # =========================
+            # SIGNAL LOGIC
+            # =========================
+
+            if market_bullish:
+                required_score = 6
+                required_rsi = 50
+            else:
+                required_score = 8
+                required_rsi = 60
+
+            if (
+                score >= required_score
+                and latest_rsi >= required_rsi
+                and confidence >= 75
+                and strong_ema
+                and breakout_confirmed
+            ):
+                signal = "BUY"
+
+            elif score >= 4:
+                signal = "HOLD"
+
+            else:
+                signal = "SELL"
+
+            # =========================
+            # RESISTANCE FILTER
+            # =========================
+
+            if signal == "BUY" and distance_to_resistance < 1.5:
+                signal = "HOLD"
+
+            
             # =========================
             # ONLY BUY SIGNALS
             # =========================
 
-            if distance_to_resistance < 1:
-                signal = "HOLD"
 
             if signal == "BUY":
                 
@@ -540,7 +645,7 @@ def scanner():
         reverse=True
     )
 
-    results = results[:5]
+    results = results[:3]
     
     # =========================
     # DIAGNOSTICS SUMMARY
